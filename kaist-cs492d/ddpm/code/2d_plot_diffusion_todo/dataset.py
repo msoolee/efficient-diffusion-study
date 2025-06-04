@@ -31,18 +31,18 @@ def sample_checkerboard(n):
     return sample
 
 
-def load_twodim(num_samples: int, dataset: str, dimension: int = 2):
+def load_twodim(num_samples: int, dataset: str, dimension: int = 2): # 여러 형태의 데이터 분포를 저장 
 
     if dataset == "gaussian_centered":
         sample = np.random.normal(size=(num_samples, dimension))
         sample = sample
 
     if dataset == "gaussian_shift":
-        sample = np.random.normal(size=(num_samples, dimension))
+        sample = np.random.normal(size=(num_samples, dimension)) # numpy를 활용해 데이터 생성 
         sample = sample + 1.5
 
     if dataset == "circle":
-        X, y = datasets.make_circles(
+        X, y = datasets.make_circles(                           # sklearn을 활용해 데이터를 생성 
             n_samples=num_samples, noise=0.0, random_state=None, factor=0.5
         )
         sample = X * 4
@@ -69,10 +69,10 @@ def load_twodim(num_samples: int, dataset: str, dimension: int = 2):
     return torch.tensor(sample).float()
 
 
-class TwoDimDataClass(Dataset):
+class TwoDimDataClass(Dataset):         
     def __init__(self, dataset_type: str, N: int, batch_size: int, dimension=2):
 
-        self.X = load_twodim(N, dataset_type, dimension=dimension)
+        self.X = load_twodim(N, dataset_type, dimension=dimension) # dataset_type 입력값으로 load_twodim 함수를 사용해서 데이터 셋을 저장 
         self.name = dataset_type
         self.batch_size = batch_size
         self.dimension = 2
@@ -84,7 +84,7 @@ class TwoDimDataClass(Dataset):
         return self.X[idx]
 
     def get_dataloader(self, shuffle=True):
-        return DataLoader(
+        return DataLoader( # 객체에 저장된 데이터를 batch_size만큼씩 나누어서 모델에 공급 
             self,
             batch_size=self.batch_size,
             shuffle=shuffle,
