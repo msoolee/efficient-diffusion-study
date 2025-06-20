@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 
-class TimeEmbedding(nn.Module):
+class TimeEmbedding(nn.Module): # 타임 임베딩 벡터를 만드는 클래스 
     def __init__(self, hidden_size, frequency_embedding_size=256):
         super().__init__()
         # hidden_size : mlp로 변형시킬 크기, TimeLinear의 __init__에서 dim_out 값 전달 
@@ -60,7 +60,7 @@ class TimeEmbedding(nn.Module):
         return t_emb
 
 
-class TimeLinear(nn.Module): 
+class TimeLinear(nn.Module): # 입력 피쳐를 선형변환하고, 타임 임베딩 벡터를 이용해서 스케일링 해주는 클래스 
     # 모델에 시간 정보를 주입하는 간단한 모듈, 시간에 따라 선형 레이어의 출력이 달라지도록 설계됨
     def __init__(self, dim_in: int, dim_out: int, num_timesteps: int): 
         # dim_in, dim_out : 입력될때 feature의 차원과, 연산을 위해 차원 조정된 feature의 차원 
@@ -83,23 +83,45 @@ class TimeLinear(nn.Module):
 
 
 class SimpleNet(nn.Module):
-    def __init__(
-        self, dim_in: int, dim_out: int, dim_hids: List[int], num_timesteps: int
-    ):
+    def __init__( # SimpleNet을 정의하는 메서드 
+        self, dim_in: int, dim_out: int, dim_hids: List[int], num_timesteps: int  # 히든 레이어들의 차원은 list로 관리 중 
+    ):                                                                            # dim_in -> dim_hids -> ... -> dim_hids[-1] -> dim_out와 같이 연결
         super().__init__()
         """
-        (TODO) Build a noise estimating network.
+        (TODO) Build a noise estimating network.  # 네트워크를 정의할때는 t는 빠지는데 foward시에 t가 주입된다. 
 
-        Args:
-            dim_in: dimension of input
+        Args: 
+            dim_in: dimension of input               
             dim_out: dimension of output
-            dim_hids: dimensions of hidden features
+            dim_hids: dimensions of hidden features  
             num_timesteps: number of timesteps
         """
 
         ######## TODO ########
-        # DO NOT change the code outside this part.
 
+        # __init__은 고정된 신경망을 정의하는 부분 : 모든 레이어를 TimeLinear로 감싸서 구성 
+
+        # 입력값 : dim_in, dim_hids, dim_out, num_timesteps 을 활용하고 
+        # 사용 도구들 : nn.Sequential등의 도구 
+
+        # 모든 레이어를 담을 리스트 (nn.Sequential로 한 번에 처리할 경우)
+        layers = []
+
+        # 첫 번째 레이어: dim_in -> dim_hids[0]
+        layers.append(TimeLinear(dim_in, dim_hids[0], num_timesteps))
+        layers.append(nn.SiLU()) # 첫 레이어 뒤에 활성화 함수 추가
+
+        # 중간 은닉 레이어들: dim_hids[i] -> dim_hids[i+1]
+        for i in range(len(dim_hids) - 1):
+            layers.append(TimeLinear(dim_hids[i], dim_hids[i+1], num_timesteps))
+            layers.append(nn.SiLU()) # 중간 레이어 뒤에 활성화 함수 추가
+
+        # 마지막 레이어: dim_hids[-1] -> dim_out
+        layers.append(TimeLinear(dim_hids[-1], dim_out, num_timesteps))
+
+        # 정의된 모든 레이어를 nn.Sequential로 묶어 하나의 네트워크로 만듦
+        # 이렇게 하면 forward 메서드에서 x와 t를 순차적으로 전달하기 편리
+        self.network = nn.Sequential(*layers)
         ######################
         
     def forward(self, x: torch.Tensor, t: torch.Tensor):
@@ -113,10 +135,11 @@ class SimpleNet(nn.Module):
             t: the time that the forward diffusion has been running
         """
         ######## TODO ########
-        
-        # x_t에 포함된 노이즈 패턴 확인
-        # t가 어느정도인지 확인
-        # MLP로 이 둘을 입력으로 해서 결과를 출력 
 
+        # 입력된 x를 먼저 TimeLinear forward에 통과 시켜야할거 같다. 
+        # 그런데 여기서 TimeLinear 객체가 dim_in, dim_out, num_timestep만 입력으로 받는다. 
+        # 이 부분에서 TimeLinear는 각각 hidden layer 앞에서 항상 통과 시켜줘야할 수도 있겠다. 
+
+        
         ######################
         return x
